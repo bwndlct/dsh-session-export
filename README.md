@@ -1,29 +1,31 @@
+**简体中文** | [English](README.en.md)
+
 # dsh-session-export
 
-Export DeepSeek Harness (DSH) sessions to portable, human-readable **Markdown** and structured **JSON**.
+将 DeepSeek Harness（DSH）会话导出为可移植、人类可读的 **Markdown** 和结构化 **JSON** 文件。
 
-`dsh-session-export` is a community plugin for [DeepSeek Harness](https://www.npmjs.com/package/@deepseek-ai/dsh). It reads the current session's event-sourced log and writes self-contained transcript files you can read, archive, share, diff, or feed to another agent — with a stable, versioned export schema that is decoupled from DSH internals.
+`dsh-session-export` 是 [DeepSeek Harness](https://www.npmjs.com/package/@deepseek-ai/dsh) 的社区插件。它读取当前会话的事件溯源日志，输出自包含的对话记录文件——可阅读、归档、分享、diff，或喂给另一个 agent——导出格式采用稳定、带版本号的 schema，与 DSH 内部实现解耦。
 
-## Features
+## 特性
 
-- **Two entry points**
-  - `session_export()` tool — ask the model to export at any time
-  - `/session-export [markdown|json|all]` slash command — one keystroke in the Web UI, zero model tokens
-- **Faithful execution order** — user messages, assistant messages (incl. reasoning), tool calls with parsed arguments, and tool results (incl. failures) in the exact order they happened
-- **Stable export schema** — `schemaVersion` on every JSON document, room to evolve
-- **Robust by design** — unknown future event types, missing metadata, hostile code fences, huge tool results, and non-text blocks never crash an export
-- **Cross-platform safe filenames** — Windows-reserved names/characters handled; existing files are never overwritten
-- **Zero runtime dependencies** — TypeScript, Node built-ins only
+- **两种入口**
+  - `session_export()` 工具 — 随时让模型执行导出
+  - `/session-export [markdown|json|all]` 斜杠命令 — Web UI 中一键触发，零模型 token 消耗
+- **忠实还原执行顺序** — 用户消息、助手消息（含推理过程）、工具调用（含解析后的参数）、工具结果（含失败）严格按发生顺序排列
+- **稳定的导出 schema** — 每个 JSON 文档都带 `schemaVersion`，为后续演进留出空间
+- **健壮设计** — 未知的未来事件类型、缺失元数据、恶意代码围栏、超大工具结果、非文本块均不会导致导出崩溃
+- **跨平台安全的文件名** — 处理 Windows 保留名称/字符；已有文件绝不覆盖
+- **零运行时依赖** — 仅 TypeScript + Node 内置模块
 
-## Installation
+## 安装
 
-Requires `dsh >= 0.1.0-rc.6`.
+需要 `dsh >= 0.1.0-rc.6`。
 
 ```sh
 dsh plugin --profile web add dsh-session-export
 ```
 
-Then add the package to the `bundles` list in the profile's `package.json` (the plugin ships a `dsh.bundle` patch manifest):
+然后将包加入 profile 的 `package.json` 中的 `bundles` 列表（插件自带 `dsh.bundle` patch manifest）：
 
 ```jsonc
 // ~/.dsh/profiles/web/package.json
@@ -37,48 +39,48 @@ Then add the package to the `bundles` list in the profile's `package.json` (the 
 }
 ```
 
-Restart `dsh` afterwards. To install from GitHub instead of npm:
+完成后重启 `dsh`。如果要从 GitHub 而非 npm 安装：
 
 ```sh
 dsh plugin --profile web add github:<your-org>/dsh-session-export
 ```
 
-## Usage
+## 用法
 
-Ask the model:
+直接让模型执行：
 
 ```text
 把当前会话导出成 Markdown
 Export this session, json only
 ```
 
-Or run a slash command directly in the Web UI:
+或在 Web UI 中直接输入斜杠命令：
 
 ```text
-/session-export            # both files (default)
-/session-export markdown   # .md only
-/session-export json       # .json only
-/session-export all        # both files
+/session-export            # 两种格式（默认）
+/session-export markdown   # 仅 .md
+/session-export json       # 仅 .json
+/session-export all        # 两种格式
 ```
 
-Prefer no argument at all? Fixed-format aliases do the same thing in one word (UI command input has no enum completion, so the aliases are the most convenient form):
+不想带参数？固定格式别名一个词搞定（UI 命令输入框没有枚举补全，别名最方便）：
 
 ```text
-/export-md       # Markdown only
-/export-json     # JSON only
+/export-md       # 仅 Markdown
+/export-json     # 仅 JSON
 ```
 
-Commands run in the UI command plane — their output never enters the model's history.
+命令在 UI 命令平面中执行——其输出不会进入模型对话历史。
 
-## Export Formats
+## 导出格式
 
 ### Markdown
 
-A readable transcript: metadata header, then the session in execution order. Tool calls render their (parsed) arguments as JSON; tool results render as fenced `text` blocks — the fence auto-widens so result content containing ``` can never break out. Results longer than 8,000 characters are truncated with a marker.
+可读的对话记录：元数据头部 + 按执行顺序排列的会话内容。工具调用将其（解析后的）参数渲染为 JSON；工具结果渲染为围栏 `text` 代码块——围栏会自动加宽，确保含 ``` 的结果内容不会撑破代码块。超过 8,000 字符的结果会被截断并标记。
 
 ### JSON
 
-A stable document owned by this plugin (not a dump of DSH internals):
+由本插件定义的稳定文档格式（非 DSH 内部结构转储）：
 
 ```json
 {
@@ -104,18 +106,18 @@ A stable document owned by this plugin (not a dump of DSH internals):
 }
 ```
 
-Notes on fidelity:
+关于保真度的说明：
 
-- `tool_call.arguments` keeps the model's raw string when it is not valid JSON.
-- `tool_result.error` carries the internal `{ name, code }` identity for failed calls.
-- Reasoning is exported when DSH records it on the assistant message; nothing private is reflected or extracted.
-- Log-only bookkeeping events (turn/step boundaries, stream chunks, todo snapshots, request headers, permission presets, …) are intentionally skipped; injected context messages (instructions, skills, notices) are omitted by default and counted under `session.omitted`.
-- Compaction replacement nodes are skipped (per the DSH transcript contract, a human-facing transcript projects append-origin events); the count is reported in `session.omitted.replacedEvents`.
-- Unknown future event types surface as `unknown_event` entries — never a crash.
+- `tool_call.arguments` 在模型输出的原始字符串不是合法 JSON 时保留原样。
+- `tool_result.error` 携带失败调用的内部 `{ name, code }` 标识。
+- 推理过程在 DSH 将其记录到助手消息上时才会导出；不会反射或提取任何私密信息。
+- 仅用于日志记录的簿记事件（轮次/步骤边界、流式块、todo 快照、请求头、权限预设等）有意跳过；注入的上下文消息（指令、技能、通知）默认省略，计入 `session.omitted`。
+- 压缩替换节点被跳过（按 DSH 对话记录约定，面向人类的记录只投影追加来源事件）；数量记录在 `session.omitted.replacedEvents` 中。
+- 未知的未来事件类型以 `unknown_event` 条目呈现——绝不崩溃。
 
-## Example
+## 示例
 
-Markdown output (trimmed):
+Markdown 输出（截短）：
 
 ````markdown
 # DSH Session Export
@@ -154,51 +156,51 @@ verify-2
 ```
 ````
 
-## Output Directory
+## 输出目录
 
-Exports land in `<session working directory>/.dsh/exports/`:
+导出文件位于 `<会话工作目录>/.dsh/exports/`：
 
 ```text
-.dsh/exports/session-<session-id>-<UTC timestamp>.md
-.dsh/exports/session-<session-id>-<UTC timestamp>.json
+.dsh/exports/session-<session-id>-<UTC 时间戳>.md
+.dsh/exports/session-<session-id>-<UTC 时间戳>.json
 ```
 
-The directory is created automatically, filenames are sanitized for Windows/macOS/Linux, and a name collision appends `-1`, `-2`, … instead of overwriting.
+目录自动创建，文件名经 Windows/macOS/Linux 安全处理，重名时追加 `-1`、`-2`……而非覆盖。
 
-## Privacy
+## 隐私
 
-**Exports can contain sensitive data.** A transcript may include your source code, file contents read by tools, tool arguments (paths, commands, queries), tool results, API responses, and absolute filesystem paths. Review an export before sharing it — this plugin performs no redaction.
+**导出文件可能包含敏感数据。**对话记录可能含有你的源代码、工具读取的文件内容、工具参数（路径、命令、查询）、工具结果、API 响应以及绝对文件系统路径。分享前请务必检查——本插件不做任何脱敏处理。
 
-## Development
+## 开发
 
 ```sh
 pnpm install
 pnpm run typecheck
 pnpm run build
-pnpm test          # node:test, no extra deps
+pnpm test          # node:test，无额外依赖
 ```
 
-Layout:
+代码布局：
 
 ```text
 src/
-  index.ts            # plugin entry: tool + slash command
-  session-adapter.ts  # DSH session -> export schema (only DSH-typed module)
-  schema.ts           # the plugin-owned export schema types
-  markdown.ts         # Markdown renderer (pure)
-  json.ts             # JSON renderer (pure)
-  exporter.ts         # filenames + file writing
-test/                 # node:test suites for markdown / json / filenames
+  index.ts            # 插件入口：工具 + 斜杠命令
+  session-adapter.ts  # DSH 会话 -> 导出 schema（唯一含 DSH 类型的模块）
+  schema.ts           # 插件自有导出 schema 类型定义
+  markdown.ts         # Markdown 渲染器（纯函数）
+  json.ts             # JSON 渲染器（纯函数）
+  exporter.ts         # 文件名生成 + 文件写入
+test/                 # node:test 套件，覆盖 markdown / json / 文件名
 ```
 
-The renderers and schema have no DSH imports, so the export format can be unit-tested and evolved independently of the DSH Developer Preview API.
+渲染器和 schema 不依赖 DSH，因此导出格式可独立于 DSH Developer Preview API 进行单元测试和演进。
 
-## Compatibility
+## 兼容性
 
-- Built and verified against `@deepseek-ai/dsh 0.1.0-rc.6` (DSH Developer Preview).
-- Uses the public plugin surface: `ctx.tools.register()` / `defineTool` from `@deepseek-ai/dsh-tools`, the optional `ctx.commands` service from `@deepseek-ai/dsh-commands`, and the public `Session` event log from `@deepseek-ai/dsh-session`. No private fields, no core modifications.
-- The slash command registers only in profiles that mount the commands service (e.g. `web`); the tool works everywhere, including `headless`.
+- 基于 `@deepseek-ai/dsh 0.1.0-rc.6`（DSH Developer Preview）构建和验证。
+- 使用公开插件接口：`@deepseek-ai/dsh-tools` 的 `ctx.tools.register()` / `defineTool`、`@deepseek-ai/dsh-commands` 的可选 `ctx.commands` 服务，以及 `@deepseek-ai/dsh-session` 的公开 `Session` 事件日志。不触及任何私有字段，不做核心修改。
+- 斜杠命令仅在挂载了 commands 服务的 profile（如 `web`）中注册；工具在所有 profile 下均可使用，包括 `headless`。
 
-## License
+## 许可证
 
 [MIT](LICENSE)
