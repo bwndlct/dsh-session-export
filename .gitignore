@@ -4,3 +4,4 @@ node_modules/
 # NOTE: lib/ (build output) is committed on purpose — GitHub-based installs
 # (`github:bwndlct/dsh-session-export`) resolve the package entry from the
 # repo without a build step, mirroring other published dsh plugins.
+pnpm-lock.yaml
