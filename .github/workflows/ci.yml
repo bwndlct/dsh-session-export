@@ -20,8 +20,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      # No lockfile is committed: this repo is a standalone package (its dev
+      # workspace lives outside git), so let pnpm resolve fresh.
+      - run: pnpm install
       - run: pnpm run typecheck
       - run: pnpm run build
       - run: pnpm test
