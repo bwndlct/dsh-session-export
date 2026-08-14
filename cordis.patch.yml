@@ -1,0 +1,5 @@
+# dsh bundle patch: mounts the plugin when listed in a profile's
+# dsh.profile.bundles (or via a manual insert in cordis.patch.yml).
+- insert:
+    - id: dsh-session-export
+      name: 'dsh-session-export'
