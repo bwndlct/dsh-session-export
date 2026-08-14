@@ -47,6 +47,10 @@ const SKIPPED_LOG_TYPES = new Set([
   'approval/policy',
   'session/title',
   'session/title-llm-request',
+  'llm/retry',
+  'llm/retry-started',
+  'command/run',
+  'command/done',
 ])
 
 function iso(ms: unknown): string {
