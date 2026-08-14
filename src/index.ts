@@ -115,31 +115,44 @@ export function apply(ctx: Context): void {
     },
   }))
 
-  // Optional slash command: mounted only in profiles that provide the
+  // Optional slash commands: mounted only in profiles that provide the
   // commands service (e.g. web). Absent service is not an error.
+  // `/session-export` keeps its optional argument for compatibility; the
+  // fixed-format aliases (`/export-md`, `/export-json`) need no argument,
+  // because UI command input has no enum completion.
   const commands = ctx.get('commands')
   if (commands !== undefined) {
-    ctx.effect(() => commands.register({
-      name: 'session-export',
-      description: 'Export the current session to Markdown/JSON under .dsh/exports/',
-      handler: async (invocation): Promise<CommandResult> => {
-        const format = parseFormat(invocation.rawInput)
-        if (format === undefined) {
-          return {
-            kind: 'error',
-            text: `session-export: unknown format "${invocation.rawInput.trim()}" (expected markdown, json, or all)`,
+    const register = (name: string, description: string, fixed?: ExportFormat, hint?: string) =>
+      ctx.effect(() => commands.register({
+        name,
+        description,
+        ...(hint !== undefined ? { input: { hint } } : {}),
+        handler: async (invocation): Promise<CommandResult> => {
+          let format: ExportFormat = fixed ?? 'all'
+          if (fixed === undefined) {
+            const parsed = parseFormat(invocation.rawInput)
+            if (parsed === undefined) {
+              return {
+                kind: 'error',
+                text: `${name}: unknown format "${invocation.rawInput.trim()}" (expected markdown, json, or all)`,
+              }
+            }
+            format = parsed
           }
-        }
-        try {
-          const outcome = await exportCurrentSession(invocation.agent, format, invocation.signal)
-          return { kind: 'success', text: outcomeText(outcome) }
-        } catch (error) {
-          return {
-            kind: 'error',
-            text: `session-export: ${error instanceof Error ? error.message : String(error)}`,
+          try {
+            const outcome = await exportCurrentSession(invocation.agent, format, invocation.signal)
+            return { kind: 'success', text: outcomeText(outcome) }
+          } catch (error) {
+            return {
+              kind: 'error',
+              text: `${name}: ${error instanceof Error ? error.message : String(error)}`,
+            }
           }
-        }
-      },
-    }), 'dsh-session-export: /session-export command')
+        },
+      }), `dsh-session-export: /${name} command`)
+
+    register('session-export', 'Export the current session to Markdown/JSON under .dsh/exports/ (default: all)', undefined, 'markdown | json | all — empty for all')
+    register('export-md', 'Export the current session as Markdown only', 'markdown')
+    register('export-json', 'Export the current session as JSON only', 'json')
   }
 }
